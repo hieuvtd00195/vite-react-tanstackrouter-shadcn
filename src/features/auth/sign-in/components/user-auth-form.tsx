@@ -16,6 +16,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from '@tanstack/react-router';
+import { Route as AuthenticatedIndexRoute } from '@/routes/_authenticated/index';
+import { Route as AuthIndex } from '@/routes/(auth)/sign-in';
 
 type UserAuthFormProps = HTMLAttributes<HTMLFormElement>
 
@@ -34,8 +38,13 @@ const formSchema = z.object({
     }),
 })
 
+
+
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { signIn } = useAuth();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,12 +56,19 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
-
-    setTimeout(() => {
+    setError(null)
+    // Fake account
+    if (
+      data.email === 'test@example.com' &&
+      data.password === '1234567'
+    ) {
+      signIn(data.email)
+      router.navigate({ to: AuthenticatedIndexRoute.fullPath })
+    } else {
+      setError('Email hoặc mật khẩu không đúng.\nDemo: test@example.com / 1234567')
       setIsLoading(false)
-    }, 3000)
+      router.navigate({ to: AuthIndex.fullPath })
+    }
   }
 
   return (

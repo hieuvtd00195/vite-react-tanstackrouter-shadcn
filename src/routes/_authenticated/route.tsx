@@ -1,17 +1,31 @@
 import Cookies from 'js-cookie'
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
+import { useAuth } from '@/context/AuthContext'
+import { useEffect } from 'react'
+import { Route as AuthIndex } from '@/routes/(auth)/sign-in';
 
 export const Route = createFileRoute('/_authenticated')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const defaultOpen = Cookies.get('sidebar_state') !== 'false'
+  const { user } = useAuth();
+  const router = useRouter();
+  const defaultOpen = Cookies.get('sidebar_state') !== 'false';
+
+  useEffect(() => {
+    if (!user) {
+      router.navigate({ to: AuthIndex.fullPath });
+    }
+  }, [user, router]);
+
+  if (!user) return null;
+
   return (
     <SearchProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -33,5 +47,5 @@ function RouteComponent() {
         </div>
       </SidebarProvider>
     </SearchProvider>
-  )
+  );
 }
