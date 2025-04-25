@@ -1,0 +1,39 @@
+# .gitignore for Vite + React + pnpm + shadcn/ui
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.local
+*.log
+pnpm-debug.log
+yarn-debug.log
+yarn-error.log
+npm-debug.log
+.cache/
+coverage/
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo
+*.swp
+*.swo
+
+# Ignore output of TypeScript incremental builds
+**/.tsbuildinfo
+
+# Ignore Mac system files
+.DS_Store
+
+# Ignore editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Ignore test coverage
+coverage/
+
+# Ignore public build artifacts
+public/build/
+public/dist/
