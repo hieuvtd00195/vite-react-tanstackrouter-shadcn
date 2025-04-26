@@ -1,6 +1,4 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import {useAuthStore} from '@/stores/authStore.ts';
-
 interface User {
   email: string;
 }

@@ -25,11 +25,9 @@ import {
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {PasswordInput} from '@/components/password-input';
-import {useAuth} from '@/context/AuthContext';
 import axios from 'axios';
 import {
 	useMutation,
-	useQuery
 } from '@tanstack/react-query';
 import {useAuthStore} from '@/stores/authStore.ts';
 import { Route as AuthenticatedIndexRoute } from '@/routes/_authenticated/index';
@@ -58,7 +56,6 @@ export function UserAuthForm({
 }: UserAuthFormProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [, setError] = useState<string | null>(null);
-	const {signIn} = useAuth();
 	const router = useRouter();
 
 	const http = axios.create({
@@ -119,6 +116,7 @@ export function UserAuthForm({
 				router.navigate({to: AuthenticatedIndexRoute.fullPath})
 			},
 			onError: (error) => {
+				console.log(error);
 			}
 		});
 	}

@@ -4,12 +4,12 @@ import SessionStorage from '@/utils/SessionStorage.ts';
 export const ACCESS_TOKEN = 'accessToken';
 export const REFRESH_TOKEN = 'refreshToken';
 
-interface AuthUser {
-	accountNo: string;
-	email: string;
-	role: string[];
-	exp: number;
-}
+// interface AuthUser {
+// 	accountNo: string;
+// 	email: string;
+// 	role: string[];
+// 	exp: number;
+// }
 
 interface AuthState {
 	auth: {

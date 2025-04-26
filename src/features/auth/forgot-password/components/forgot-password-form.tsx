@@ -32,8 +32,8 @@ export function ForgotPasswordForm({ className, ...props }: ForgotFormProps) {
   })
 
   function onSubmit(data: z.infer<typeof formSchema>) {
+    console.log(data);
     setIsLoading(true)
-    // eslint-disable-next-line no-console
 
     setTimeout(() => {
       setIsLoading(false)

@@ -9,7 +9,6 @@ import {useAuthStore} from '@/stores/authStore.ts';
 import type {RegisteredRouter} from '@tanstack/react-router';
 import axios from 'axios';
 import DateTime from '@/utils/DateTime.ts';
-import {REFRESH_TOKEN} from '@/stores/authStore.ts';
 
 // Create a standalone axios instance for token refresh to avoid circular dependency
 const refreshTokenInstance = axios.create({

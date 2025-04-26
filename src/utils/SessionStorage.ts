@@ -1,6 +1,6 @@
 import logger from './Logger'
 
-type Key = 'mbfAccessToken' | 'mbfRefreshToken' | 'mbfExpiresAt' | 'mbfUserId' | 'mbfDeviceToken'
+// type Key = 'mbfAccessToken' | 'mbfRefreshToken' | 'mbfExpiresAt' | 'mbfUserId' | 'mbfDeviceToken'
 
 class SessionStorage {
   public get(key: string, fallback: any = null) {
