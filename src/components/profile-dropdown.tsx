@@ -1,7 +1,6 @@
 import { Link, useRouter } from '@tanstack/react-router'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/context/AuthContext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +12,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Route as AuthIndex } from '@/routes/(auth)/sign-in';
+import {useAuthStore} from '@/stores/authStore.ts';
 
 export function ProfileDropdown() {
-  const { signOut } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
-    signOut();
+	  useAuthStore.getState().auth.reset();
     router.navigate({ to: AuthIndex.fullPath });
   };
 
