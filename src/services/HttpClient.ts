@@ -7,7 +7,39 @@ import type {
 } from 'axios'
 import axios from 'axios'
 import DateTime from '@/utils/DateTime.ts';
-import {ACCESS_TOKEN} from '@/stores/authStore.ts';
+import {ACCESS_TOKEN, REFRESH_TOKEN, useAuthStore} from '@/stores/authStore.ts';
+
+// For token refresh
+let isRefreshing = false;
+interface QueueItem {
+	resolve: (value?: unknown) => void;
+	reject: (reason?: unknown) => void;
+}
+let failedQueue: QueueItem[] = [];
+
+// Create a standalone axios instance for token refresh to avoid circular dependency
+const refreshTokenInstance = axios.create({
+	baseURL: 'http://103.178.231.211:9201/',
+	headers: {
+		'Content-Type': 'application/json',
+		TimeZone: DateTime.TimeZone()
+	},
+	timeout: 10 * 60 * 1000
+});
+
+const processQueue = (error: unknown, token: string | null = null) => {
+	failedQueue.forEach(prom => {
+		if (error) {
+			prom.reject(error);
+		} else {
+			prom.resolve(token);
+		}
+	});
+	failedQueue = [];
+};
+
+// Will be used to update all instance headers after token refresh
+let axiosInstances: AxiosInstance[] = [];
 
 class Axios {
 	private instance: AxiosInstance
@@ -31,8 +63,77 @@ class Axios {
 			},
 			(error) => Promise.reject(error)
 		)
+		
+		instance.interceptors.response.use(
+			response => response,
+			async (error: AxiosError) => {
+				const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+				
+				if (error.response?.status === 401 && !originalRequest._retry) {
+					if (isRefreshing) {
+						return new Promise((resolve, reject) => {
+							failedQueue.push({ resolve, reject });
+						})
+							.then(token => {
+								if (originalRequest.headers && typeof token === 'string') {
+									originalRequest.headers.Authorization = token;
+								}
+								return axios(originalRequest);
+							})
+							.catch(err => Promise.reject(err));
+					}
+					
+					originalRequest._retry = true;
+					isRefreshing = true;
+					
+					try {
+						const refreshToken = SessionStorage.get(REFRESH_TOKEN);
+						if (!refreshToken) {
+							throw new Error('No refresh token available');
+						}
+						
+						const response = await refreshTokenInstance.post(
+							`auth/refresh-token?tokenRefresh=${refreshToken}`
+						);
+						
+						if (response.status === 200) {
+							const { accessToken, refreshToken: newRefreshToken } = response.data.responseData;
+							
+							useAuthStore.getState().auth.setAccessToken(accessToken);
+							useAuthStore.getState().auth.setRefreshToken(newRefreshToken);
+							
+							axios.defaults.headers.common.Authorization = accessToken;
+							if (originalRequest.headers) {
+								originalRequest.headers.Authorization = accessToken;
+							}
+							
+							axiosInstances.forEach(instance => {
+								if (instance.defaults.headers) {
+									instance.defaults.headers.common = instance.defaults.headers.common || {};
+									instance.defaults.headers.common.Authorization = accessToken;
+								}
+							});
+							
+							processQueue(null, accessToken);
+							
+							return axios(originalRequest);
+						}
+					} catch (err) {
+						processQueue(err, null);
+						useAuthStore.getState().auth.reset();
+						return Promise.reject(err);
+					} finally {
+						isRefreshing = false;
+					}
+				}
+				
+				return Promise.reject(error);
+			}
+		);
 
 		this.instance = instance
+		// Register this instance for token refresh updates
+		axiosInstances.push(instance);
 	}
 
 	public get Instance() {

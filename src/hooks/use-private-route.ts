@@ -3,29 +3,44 @@ import {useQuery} from '@tanstack/react-query';
 import {HttpAuth} from '@/services/HttpClient.ts';
 import {
 	useEffect,
+	useState,
 } from 'react';
 import {Route as AuthIndex} from '@/routes/(auth)/sign-in.tsx';
 import {useRouter} from '@tanstack/react-router';
 
 const usePrivateRoute = () => {
 	const router = useRouter();
+	const [isTokenReady, setIsTokenReady] = useState(false);
+	const authState = useAuthStore.getState().auth;
 
-	if(!useAuthStore.getState().auth.accessToken) router.navigate({ to: AuthIndex.fullPath });
+	useEffect(() => {
+		const checkAndRefreshToken = async () => {
+			if (!authState.accessToken) {
+				router.navigate({ to: AuthIndex.fullPath });
+				return;
+			}
+			
+			setIsTokenReady(true);
+		};
+		
+		checkAndRefreshToken();
+	}, [authState.accessToken, router]);
 
 	const {data, isLoading} = useQuery({
-		enabled: !!useAuthStore.getState().auth.accessToken,
+		enabled: !!authState.accessToken && isTokenReady,
 		queryFn: async () => HttpAuth.get('api/v1/user/profile'),
 		queryKey: ['userProfile'],
-	})
+		retry: 1, 
+	});
 
 	useEffect(() => {
 		if(data){
-			useAuthStore.getState().auth.setUser(data.responseData)
+			useAuthStore.getState().auth.setUser(data.responseData);
 		}
-	},[data])
+	}, [data]);
 
 	return {
-		isInit: isLoading,
+		isInit: isLoading || !isTokenReady,
 		hasUser: !!data?.responseData,
 	}
 }

@@ -7,6 +7,19 @@ import type {
 } from '@tanstack/react-query';
 import {useAuthStore} from '@/stores/authStore.ts';
 import type {RegisteredRouter} from '@tanstack/react-router';
+import axios from 'axios';
+import DateTime from '@/utils/DateTime.ts';
+import {REFRESH_TOKEN} from '@/stores/authStore.ts';
+
+// Create a standalone axios instance for token refresh to avoid circular dependency
+const refreshTokenInstance = axios.create({
+	baseURL: 'http://103.178.231.211:9201/',
+	headers: {
+		'Content-Type': 'application/json',
+		TimeZone: DateTime.TimeZone()
+	},
+	timeout: 10 * 60 * 1000
+});
 
 let isRedirecting = false;
 let isRefreshing = false;
@@ -16,6 +29,8 @@ let failedQueue: {
 	query?: Query<unknown, unknown, unknown, readonly unknown[]>;
 	mutation?: Mutation<unknown, unknown, unknown, unknown>;
 	variables?: unknown;
+	resolve: (value?: unknown) => void;
+	reject: (reason?: unknown) => void;
 }[] = [];
 
 export function handleServerError(error: unknown) {
@@ -107,40 +122,58 @@ const refreshTokenAndRetry = async (
 ) => {
 	try {
 		retryCount++;
+		const waitForRefresh = new Promise((resolve, reject) => {
+			failedQueue.push({
+				query,
+				mutation,
+				variables,
+				resolve,
+				reject
+			});
+		});
+		
 		if(!isRefreshing) {
 			isRefreshing = true;
-			failedQueue.push({
-				query,
-				mutation,
-				variables
-			});
-			// const { accessToken, refreshToken: newRefreshToken } = await refreshToken(
-			// 	{
-			// 		refreshToken: getRefreshToken()!,
-			// 	}
-			// );
-			useAuthStore.getState()
-				.auth
-				.setAccessToken('');
-			useAuthStore.getState()
-				.auth
-				.setRefreshToken('');
-			processFailedQueue();
-		} else {
-			failedQueue.push({
-				query,
-				mutation,
-				variables
-			});
+			
+			try {
+				const refreshToken = useAuthStore.getState().auth.refreshToken;
+				if (!refreshToken) {
+					throw new Error('No refresh token available');
+				}
+				
+				const response = await refreshTokenInstance.post(
+					`auth/refresh-token?tokenRefresh=${refreshToken}`
+				);
+				
+				if (response.status === 200) {
+					const { accessToken, refreshToken: newRefreshToken } = response.data.responseData;
+					
+					useAuthStore.getState().auth.setAccessToken(accessToken);
+					useAuthStore.getState().auth.setRefreshToken(newRefreshToken);
+					
+					processFailedQueue();
+				} else {
+					throw new Error('Token refresh failed');
+				}
+			} catch (error) {
+				failedQueue.forEach(promise => {
+					promise.reject(error);
+				});
+				failedQueue = [];
+				throw error;
+			} finally {
+				isRefreshing = false;
+			}
 		}
+		
+		return await waitForRefresh;
 	}
-	catch {
+	catch (error) {
 		useAuthStore.getState()
 			.auth
 			.reset();
 		if(!isRedirecting) {
 			isRedirecting = true;
-			// window.location.href = "/auth/session-expired";
 			toast.error('Session expired!');
 			const redirect = `${router.history.location.href}`;
 			router.navigate({
@@ -148,25 +181,31 @@ const refreshTokenAndRetry = async (
 				search: {redirect}
 			});
 		}
+		throw error;
 	}
 };
 
-
-
 const processFailedQueue = () => {
-	failedQueue.forEach(({
-		query,
-		mutation,
-		variables
-	}) => {
-		if(retryCount > maxRetryCount) return;
-		if(mutation) {
-			const {options} = mutation;
-			mutation.setOptions({...options});
-			mutation.execute(variables);
+	failedQueue.forEach(item => {
+		const {
+			query,
+			mutation,
+			variables,
+			resolve
+		} = item;
+		
+		try {
+			if(retryCount > maxRetryCount) return;
+			if(mutation) {
+				const {options} = mutation;
+				mutation.setOptions({...options});
+				mutation.execute(variables);
+			}
+			if(query) query.fetch(query.options);
+			resolve();
+		} catch (error) {
+			item.reject(error);
 		}
-		if(query) query.fetch(query.options);
 	});
-	isRefreshing = false;
 	failedQueue = [];
 };
