@@ -15,6 +15,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
+import {useAuthStore} from '@/stores/authStore.ts';
 
 export default function Dashboard() {
   return (

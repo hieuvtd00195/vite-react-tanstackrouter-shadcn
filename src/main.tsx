@@ -2,14 +2,16 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { AxiosError } from 'axios'
 import {
-  QueryCache,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
+	MutationCache,
+	QueryCache,
+	QueryClient,
+	QueryClientProvider,
+} from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import { useAuthStore } from '@/stores/authStore'
-import { handleServerError } from '@/utils/handle-server-error'
+import {
+	handleMutationError,
+	handleQueryError,
+} from '@/utils/handle-server-error';
 import { FontProvider } from './context/font-context'
 import { ThemeProvider } from './context/theme-context'
 import { AuthProvider } from './context/AuthContext'
@@ -34,38 +36,49 @@ const queryClient = new QueryClient({
       },
       refetchOnWindowFocus: import.meta.env.PROD,
       staleTime: 10 * 1000, // 10s
-    },
-    mutations: {
-      onError: (error) => {
-        handleServerError(error)
 
-        if (error instanceof AxiosError) {
-          if (error.response?.status === 304) {
-            toast.error('Content not modified!')
-          }
-        }
-      },
     },
+    // mutations: {
+    //   onError: (error) => {
+    //     handleServerError(error)
+		//
+	  //     if(error instanceof AxiosError) {
+		//       if(error.response?.status === 401) {
+		// 	      toast.error('Session expired!');
+		// 	      useAuthStore.getState()
+		// 		      .auth
+		// 		      .reset();
+		// 	      const redirect = `${router.history.location.href}`;
+		// 	      router.navigate({
+		// 		      to: '/sign-in',
+		// 		      search: {redirect}
+		// 	      });
+		//
+		//
+		//       }
+		//       if(error.response?.status === 500) {
+		// 	      toast.error('Internal Server Error!');
+		// 	      router.navigate({to: '/500'});
+		//       }
+		//       if(error.response?.status === 403) {
+		// 	      // router.navigate("/forbidden", { replace: true });
+		//       }
+		//
+		//       if(error.response?.status === 304) {
+		// 	      toast.error('Content not modified!');
+		//       }
+	  //     }
+    //   },
+    // },
   },
   queryCache: new QueryCache({
-    onError: (error) => {
-      if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
-          toast.error('Session expired!')
-          useAuthStore.getState().auth.reset()
-          const redirect = `${router.history.location.href}`
-          router.navigate({ to: '/sign-in', search: { redirect } })
-        }
-        if (error.response?.status === 500) {
-          toast.error('Internal Server Error!')
-          router.navigate({ to: '/500' })
-        }
-        if (error.response?.status === 403) {
-          // router.navigate("/forbidden", { replace: true });
-        }
-      }
-    },
+    onError: (error, query) => handleQueryError(router, error, query),
   }),
+	mutationCache: new MutationCache({
+		onError: (error, variables, context, mutation) => {
+			handleMutationError(router, error, variables, context, mutation)
+		},
+	})
 })
 
 // Create a new router instance
@@ -93,7 +106,7 @@ if (!rootElement.innerHTML) {
         <ThemeProvider defaultTheme='light' storageKey='vite-ui-theme'>
           <FontProvider>
             <AuthProvider>
-              <RouterProvider router={router} />
+              <RouterProvider router={router}  />
             </AuthProvider>
           </FontProvider>
         </ThemeProvider>
