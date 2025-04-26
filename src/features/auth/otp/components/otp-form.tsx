@@ -1,11 +1,8 @@
-import { HTMLAttributes, useState } from 'react'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from '@tanstack/react-router'
-import { cn } from '@/lib/utils'
-import { showSubmittedData } from '@/utils/show-submitted-data'
-import { Button } from '@/components/ui/button'
+import {
+	HTMLAttributes,
+} from 'react';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,54 +10,33 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
-} from '@/components/ui/input-otp'
+} from "@/components/ui/input-otp";
+import { useOtp } from "@/features/auth/otp/context/OtpContext.ts";
 
-type OtpFormProps = HTMLAttributes<HTMLFormElement>
-
-const formSchema = z.object({
-  otp: z.string().min(1, { message: 'Please enter your otp code.' }),
-})
+type OtpFormProps = HTMLAttributes<HTMLFormElement>;
 
 export function OtpForm({ className, ...props }: OtpFormProps) {
-  const navigate = useNavigate()
-  const [isLoading, setIsLoading] = useState(false)
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { otp: '' },
-  })
-
-  const otp = form.watch('otp')
-
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    showSubmittedData(data)
-
-    setTimeout(() => {
-      setIsLoading(false)
-      navigate({ to: '/' })
-    }, 1000)
-  }
+  const { loading, form, onSubmit, validOtpLength } = useOtp();
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className={cn('grid gap-2', className)}
+        className={cn("grid gap-2", className)}
         {...props}
       >
         <FormField
           control={form.control}
-          name='otp'
+          name="otp"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='sr-only'>One-Time Password</FormLabel>
+              <FormLabel className="sr-only">One-Time Password</FormLabel>
               <FormControl>
                 <InputOTP
                   maxLength={6}
@@ -87,10 +63,10 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
             </FormItem>
           )}
         />
-        <Button className='mt-2' disabled={otp.length < 6 || isLoading}>
+        <Button className="mt-2" disabled={!validOtpLength || loading}>
           Verify
         </Button>
       </form>
     </Form>
-  )
+  );
 }
