@@ -6,6 +6,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
 import usePrivateRoute from '@/hooks/use-private-route.ts';
+import { NavigationProgress } from '@/components/navigation-progress'
 
 export const Route = createFileRoute('/_authenticated')({
   component: RouteComponent,
@@ -15,7 +16,7 @@ function RouteComponent() {
   const defaultOpen = Cookies.get('sidebar_state') !== 'false';
 	const {isInit, hasUser} = usePrivateRoute()
 
-	if(isInit || !hasUser) return <>Loading</>
+	if(isInit || !hasUser) return <NavigationProgress />
 
   return (
     <SearchProvider>
