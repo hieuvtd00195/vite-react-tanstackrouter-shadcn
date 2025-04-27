@@ -17,8 +17,7 @@ export default function SignIn() {
           <CardTitle className='text-lg tracking-tight'>Login</CardTitle>
           <CardDescription>
             Enter your email and password below to <br />
-            log into your account.  <br />
-            Account test: test@example.com / 1234567
+            log into your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
