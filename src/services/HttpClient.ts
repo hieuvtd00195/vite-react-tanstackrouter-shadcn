@@ -19,7 +19,7 @@ let failedQueue: QueueItem[] = [];
 
 // Create a standalone axios instance for token refresh to avoid circular dependency
 const refreshTokenInstance = axios.create({
-	baseURL: 'http://103.178.231.211:9201/',
+	baseURL: 'http://apispm.hkcare.vn/',
 	headers: {
 		'Content-Type': 'application/json',
 		TimeZone: DateTime.TimeZone()
@@ -203,7 +203,7 @@ class Axios {
 }
 
 const configAuthService: AxiosRequestConfig = {
-	baseURL: 'http://103.178.231.211:9301/',
+	baseURL: 'http://apispm.hkcare.vn/',
 	headers: {
 		'Content-Type': 'application/json',
 		TimeZone: DateTime.TimeZone()
