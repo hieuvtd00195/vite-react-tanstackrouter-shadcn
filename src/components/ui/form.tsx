@@ -84,6 +84,29 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
+interface FormLabelProps extends React.ComponentProps<typeof LabelPrimitive.Root> {
+	error?: boolean
+	name?: string
+}
+function TSFormLabel({
+	className,
+	name,
+	error,
+	...props
+}: FormLabelProps) {
+
+
+	return (
+		<Label
+			data-slot='form-label'
+			data-error={error}
+			className={cn('data-[error=true]:text-destructive', className)}
+			htmlFor={name}
+			{...props}
+		/>
+	)
+}
+
 function FormLabel({
   className,
   ...props
@@ -152,6 +175,29 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   )
 }
 
+interface FormErrorProps extends React.ComponentProps<'p'> {
+	name?: string
+	errorMessage?: string
+}
+function TSFormError({ className, errorMessage, name, ...props }: FormErrorProps) {
+	const body = errorMessage || props.children
+
+	if (!body) {
+		return null
+	}
+
+	return (
+		<p
+			data-slot='form-message'
+			id={name}
+			className={cn('text-destructive text-sm', className)}
+			{...props}
+		>
+			{body}
+		</p>
+	)
+}
+
 export {
   useFormField,
   Form,
@@ -161,4 +207,6 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+	TSFormError,
+	TSFormLabel
 }
